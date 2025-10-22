@@ -9,5 +9,8 @@ export default {
       ssr: false, // ✅ force disable SSR (no expo-router)
       favicon: "./assets/favicon.png",
     },
+    experiments: {
+      typedRoutes: false, // 👈 force disable expo-router auto detection
+    },
   },
 };
