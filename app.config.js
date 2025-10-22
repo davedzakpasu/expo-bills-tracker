@@ -6,11 +6,11 @@ export default {
     web: {
       bundler: "metro",
       output: "static",
-      ssr: false, // ✅ force disable SSR (no expo-router)
+      ssr: false, // force disable SSR (no expo-router)
       favicon: "./assets/favicon.png",
     },
     experiments: {
-      typedRoutes: false, // 👈 force disable expo-router auto detection
+      typedRoutes: false, // force disable expo-router auto detection
     },
   },
 };
