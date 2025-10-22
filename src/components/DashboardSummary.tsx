@@ -3,7 +3,7 @@ import React from "react";
 import { useWindowDimensions, View } from "react-native";
 import { useTheme } from "react-native-paper";
 import { createAppStyles } from "src/theme/styles";
-import SummaryCard from "./SummaryCard";
+import SummaryCard from "./cards/SummaryCard";
 
 type DashboardSummaryProps = {
   totalMonthly: number;
@@ -36,7 +36,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({
 
   const data = [
     {
-      title: "Total due this month",
+      title: "Due this month",
       value: formatCurrency(totalMonthly),
       icon: "cash-multiple",
       color: theme.colors.primary,
@@ -45,7 +45,7 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({
         : "rgba(100,150,255,0.1)",
     },
     {
-      title: "Total remaining",
+      title: "Installments remaining",
       value: formatCurrency(totalRemaining),
       icon: "chart-line",
       color: "#4CAF50",

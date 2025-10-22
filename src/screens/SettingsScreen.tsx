@@ -13,7 +13,7 @@ import {
   TextInput,
   useTheme,
 } from "react-native-paper";
-import { createAppStyles, metrics } from "src/theme/styles";
+import { createAppStyles, tokens } from "src/theme/styles";
 
 export default function SettingsScreen({ navigation }: any) {
   const theme = useTheme();
@@ -37,8 +37,8 @@ export default function SettingsScreen({ navigation }: any) {
         style={{
           flexDirection: "row",
           alignItems: "center",
-          paddingHorizontal: metrics.spacing * 1.3,
-          paddingVertical: metrics.spacing,
+          paddingHorizontal: tokens.spacing.md * 1.3,
+          paddingVertical: tokens.spacing.md,
           backgroundColor: theme.colors.surface,
           elevation: 4,
         }}
@@ -55,7 +55,7 @@ export default function SettingsScreen({ navigation }: any) {
             fontSize: 20,
             fontWeight: "700",
             color: theme.colors.primary,
-            marginLeft: metrics.spacing,
+            marginLeft: tokens.spacing.md,
           }}
         >
           Settings
@@ -67,24 +67,26 @@ export default function SettingsScreen({ navigation }: any) {
         value={nickname}
         onChangeText={setNickname}
         style={{
-          marginHorizontal: metrics.spacing * 1.3,
-          marginVertical: metrics.spacing,
+          marginHorizontal: tokens.spacing.md * 1.3,
+          marginVertical: tokens.spacing.md,
         }}
       />
       <Button
         mode="contained"
         onPress={() => setUser({ nickname })}
-        style={{ marginHorizontal: metrics.spacing * 1.3 }}
+        style={{ marginHorizontal: tokens.spacing.md * 1.3 }}
       >
         Save
       </Button>
       <View
         style={{
-          marginHorizontal: metrics.spacing * 1.3,
-          marginVertical: metrics.spacing,
+          marginHorizontal: tokens.spacing.md * 1.3,
+          marginVertical: tokens.spacing.md,
         }}
       >
-        <Text style={{ fontWeight: "600", marginBottom: 8 }}>Theme</Text>
+        <Text style={{ fontWeight: "600", marginBottom: tokens.spacing.sm }}>
+          Theme
+        </Text>
         <RadioButton.Group
           onValueChange={(value) =>
             setMode(value as "light" | "dark" | "system")

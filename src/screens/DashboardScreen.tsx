@@ -1,37 +1,69 @@
+import DashboardFooter from "@components/DashboardFooter";
 import DashboardSummary from "@components/DashboardSummary";
-import { EmptyState } from "@components/EmptyState";
+import EntrySection from "@components/EntrySection";
 import { Spacer } from "@components/Spacer";
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import {
-  FlatList,
   ScrollView,
-  TouchableOpacity,
-  View,
   useColorScheme,
+  useWindowDimensions,
+  View,
 } from "react-native";
-import { FAB, Text, useTheme } from "react-native-paper";
-import AddBillModal from "src/modals/AddBillModal";
-import BillCard from "../components/BillCard";
+import { IconButton, Text, useTheme } from "react-native-paper";
+import BillModal from "src/modals/BillModal";
+import InstallmentModal from "src/modals/InstallmentModal";
 import { useAppContext } from "../context/AppContext";
 import { useThemeContext } from "../context/ThemeContext";
-import { createAppStyles, metrics } from "../theme/styles";
-import { Entry } from "../types";
+import { createAppStyles, tokens } from "../theme/styles";
+import { billmode, Entry, SectionConfig } from "../types";
+
+const createSectionsConfig = (
+  bills: Entry[],
+  installmentBills: Entry[]
+): SectionConfig[] => [
+  {
+    title: "Bills",
+    data: bills,
+    emptyTitle: "No bills yet",
+    emptyMessage: "Add a recurring or single bill to get started.",
+    actionLabel: "Add Bill",
+    mode: "bill",
+  },
+  {
+    title: "Installments",
+    data: installmentBills,
+    emptyTitle: "No installments yet",
+    emptyMessage: "Add a multi-payment item to track your installments.",
+    actionLabel: "Add Installment",
+    mode: "installment",
+  },
+];
 
 export default function DashboardScreen({ navigation }: any) {
-  const { bills, user, markPaid, updateBill, addBill, resetApp } =
-    useAppContext();
+  const {
+    bills,
+    user,
+    markPaid,
+    updateEntry: updateBill,
+    addEntry: addBill,
+    resetApp,
+  } = useAppContext();
   const theme = useTheme();
   const styles = createAppStyles(theme);
   const { mode, toggleTheme } = useThemeContext();
   const colorScheme = useColorScheme();
+  const { width } = useWindowDimensions();
+
   const [modalVisible, setModalVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Entry | undefined>(
     undefined
   );
+  const [billMode, setBillMode] = useState<"bill" | "installment">("bill");
+  const isWideScreen = width >= 768;
 
-  const [expandedBills, setExpandedBills] = useState(false);
-  const [expandedInstallments, setExpandedInstallments] = useState(false);
+  const [selected, setSelected] = useState<null | (typeof bills)[0]>(null);
+  const [detailsVisible, setDetailsVisible] = useState(false);
 
   const effectiveMode: "light" | "dark" =
     mode === "system" ? (colorScheme === "dark" ? "dark" : "light") : mode;
@@ -46,27 +78,38 @@ export default function DashboardScreen({ navigation }: any) {
         ? "Good afternoon"
         : "Good evening";
     return `${time}, ${user?.nickname ?? "User"}`;
-  }, [user]);
+  }, [user?.nickname]);
 
   /** Derived Data **/
-  const regularBills = bills.filter((b) => !b.isInstallment);
-  const installmentBills = bills.filter((b) => b.isInstallment);
+  const {
+    regularBills,
+    installmentBills,
+    totalMonthly,
+    totalRemaining,
+    overdue,
+  } = useMemo(() => {
+    const regular = bills.filter((b) => !b.isInstallment);
+    const installments = bills.filter((b) => b.isInstallment);
 
-  const displayedRegularBills = expandedBills
-    ? regularBills
-    : regularBills.slice(0, 3);
-  const displayedInstallments = expandedInstallments
-    ? installmentBills
-    : installmentBills.slice(0, 3);
+    const monthly = regular.reduce((sum, b) => sum + (b.amount ?? 0), 0);
+    const remaining = installments.reduce(
+      (sum, b) => sum + ((b as any).remainingBalance ?? 0),
+      0
+    );
+    const overdueCount = bills.filter(
+      (b) => b.nextDueDate && new Date(b.nextDueDate) < new Date()
+    ).length;
 
-  const totalMonthly = regularBills.reduce((s, b) => s + (b.amount ?? 0), 0);
-  const totalRemaining = installmentBills.reduce(
-    (s, b) => s + ((b as any).remainingBalance ?? 0),
-    0
-  );
-  const overdue = bills.filter(
-    (b) => b.nextDueDate && new Date(b.nextDueDate) < new Date()
-  ).length;
+    return {
+      regularBills: regular,
+      installmentBills: installments,
+      totalMonthly: monthly,
+      totalRemaining: remaining,
+      overdue: overdueCount,
+    };
+  }, [bills]);
+
+  const sections = createSectionsConfig(regularBills, installmentBills);
 
   const handleExit = () => {
     resetApp();
@@ -76,75 +119,92 @@ export default function DashboardScreen({ navigation }: any) {
     });
   };
 
-  const openEditModal = (entry: Entry) => {
-    setEditingEntry(entry);
+  const openAddModal = (mode: billmode) => {
+    setEditingEntry(undefined);
+    setBillMode(mode);
     setModalVisible(true);
   };
 
-  /** Section renderer **/
-  const renderSection = (
-    title: string,
-    data: Entry[],
-    displayedData: Entry[],
-    expanded: boolean,
-    setExpanded: (v: boolean) => void,
-    emptyTitle: string,
-    emptyMsg: string,
-    actionLabel: string
-  ) => (
-    <View style={styles.sectionContainer}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {data.length > 3 && (
-          <TouchableOpacity onPress={() => setExpanded(!expanded)}>
-            <Text style={styles.seeAll}>
-              {expanded ? "Show Less" : "See All"}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+  const openEditModal = (entry: Entry) => {
+    setEditingEntry(entry);
+    setBillMode(entry.isInstallment ? "installment" : "bill");
+    setModalVisible(true);
+  };
 
-      <View
-        style={[
-          styles.listContainer,
-          {
-            borderRadius: metrics.radius,
-            padding: metrics.spacing * 1.3,
-            shadowColor: theme.dark ? "#000" : "#333",
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: theme.dark ? 0.3 : 0.12,
-            shadowRadius: 6,
-            elevation: 4,
-          },
-        ]}
-      >
-        <FlatList
-          data={displayedData}
-          keyExtractor={(i) => i.id}
-          renderItem={({ item }) => (
-            <BillCard
-              item={item}
-              onMarkPaid={() => markPaid(item.id)}
-              onEdit={() => openEditModal(item)}
-            />
-          )}
-          ListEmptyComponent={
-            <EmptyState
-              title={emptyTitle}
-              message={emptyMsg}
-              actionLabel={actionLabel}
-              onActionPress={() => setModalVisible(true)}
-            />
-          }
-          scrollEnabled={false}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
-    </View>
-  );
+  const handleModalDismiss = () => {
+    setModalVisible(false);
+    setEditingEntry(undefined);
+  };
+
+  const handleCardPress = (entry: any) => {
+    setSelected(entry);
+    setDetailsVisible(true);
+  };
+
+  /** Section renderer **/
+  // const renderSection = (
+  //   title: string,
+  //   data: Entry[],
+  //   displayedData: Entry[],
+  //   // expanded: boolean,
+  //   // setExpanded: (v: boolean) => void,
+  //   emptyTitle: string,
+  //   emptyMsg: string,
+  //   actionLabel: string,
+  //   onAddPress: () => void
+  // ) => {
+  //   const visibleItems = data.slice(0, 3);
+  //   const hasMore = data.length > 3;
+  //   const [expanded, setExpanded] = useState(false);
+  //   const itemsToRender = expanded ? data : visibleItems;
+
+  //   return (
+  //     <View style={styles.card}>
+  //       <View style={styles.sectionHeader}>
+  //         <Text style={styles.title}>{title}</Text>
+  //       </View>
+
+  //       {data.length === 0 ? (
+  //         <EmptyState
+  //           title="Nothing yet"
+  //           message="Add a new item to get started."
+  //           actionLabel="Add"
+  //           onActionPress={onAddPress}
+  //         />
+  //       ) : (
+  //         <>
+  //           <FlatList
+  //             data={itemsToRender}
+  //             keyExtractor={(item) => item.id}
+  //             renderItem={({ item }) => (
+  //               <BillCard
+  //                 item={item}
+  //                 onMarkPaid={() => markPaid(item.id)}
+  //                 onEdit={() => openEditModal(item)}
+  //                 onPress={() => handleCardPress(item)}
+  //               />
+  //             )}
+  //             scrollEnabled={false}
+  //             ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+  //           />
+
+  //           {hasMore && (
+  //             <Button
+  //               onPress={() => setExpanded(!expanded)}
+  //               textColor={theme.colors.primary}
+  //               style={styles.seeAllButton}
+  //             >
+  //               {expanded ? "Show less" : "See all"}
+  //             </Button>
+  //           )}
+  //         </>
+  //       )}
+  //     </View>
+  //   );
+  // };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.surface }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.elevation.level2 }}>
       {/* Sticky Header */}
       <View style={styles.stickyHeader}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -152,7 +212,7 @@ export default function DashboardScreen({ navigation }: any) {
             name="apps-outline"
             size={28}
             color={theme.colors.primary}
-            style={{ marginRight: metrics.spacing * 0.7 }}
+            style={{ marginRight: tokens.spacing.md * 0.7 }}
           />
           <Text
             style={{
@@ -166,51 +226,51 @@ export default function DashboardScreen({ navigation }: any) {
         </View>
 
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <TouchableOpacity
+          <IconButton
+            icon={() => (
+              <Ionicons
+                name={effectiveMode === "light" ? "sunny" : "moon"}
+                size={24}
+                color={theme.colors.primary}
+              />
+            )}
+            style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
             onPress={toggleTheme}
-            style={{ marginHorizontal: metrics.spacing * 0.5 }}
-          >
-            <Ionicons
-              name={effectiveMode === "light" ? "moon" : "sunny"}
-              size={24}
-              color={theme.colors.primary}
-            />
-          </TouchableOpacity>
+          />
 
-          <TouchableOpacity
+          <IconButton
+            icon={() => (
+              <Ionicons
+                name="settings-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
+            )}
+            style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
             onPress={() => navigation.navigate("Settings")}
-            style={{ marginHorizontal: metrics.spacing * 0.5 }}
-          >
-            <Ionicons
-              name="settings-outline"
-              size={24}
-              color={theme.colors.primary}
-            />
-          </TouchableOpacity>
+          />
 
-          <TouchableOpacity
+          <IconButton
+            icon={() => (
+              <Ionicons
+                name="exit-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
+            )}
+            style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
             onPress={handleExit}
-            style={{ marginHorizontal: metrics.spacing * 0.5 }}
-          >
-            <Ionicons
-              name="exit-outline"
-              size={24}
-              color={theme.colors.primary}
-            />
-          </TouchableOpacity>
+          />
         </View>
       </View>
 
       {/* Scrollable Content */}
       <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: metrics.spacing * 1.3,
-          paddingBottom: metrics.spacing * 4,
-        }}
+        contentContainerStyle={styles.screen}
         showsVerticalScrollIndicator={false}
       >
         {/* Greeting */}
-        <Text style={styles.greeting}>{greeting}</Text>
+        <Text style={styles.title}>{greeting}</Text>
 
         {/* Summary */}
         <DashboardSummary
@@ -220,53 +280,54 @@ export default function DashboardScreen({ navigation }: any) {
         />
         <Spacer />
 
-        {/* Bills */}
-        {renderSection(
-          "Your Bills",
-          regularBills,
-          displayedRegularBills,
-          expandedBills,
-          setExpandedBills,
-          "No bills yet",
-          "Add a recurring or single bill to get started.",
-          "Add Bill"
-        )}
-
-        {/* Installments */}
-        {renderSection(
-          "Your Installments",
-          installmentBills,
-          displayedInstallments,
-          expandedInstallments,
-          setExpandedInstallments,
-          "No installments yet",
-          "Add a multi-payment item to track your installments.",
-          "Add Installment"
-        )}
+        {/* Sections Container - Responsive Layout */}
+        <View
+          style={{
+            flexDirection: isWideScreen ? "row" : "column",
+            gap: tokens.spacing.md,
+            width: "100%",
+          }}
+        >
+          {sections.map((section) => (
+            <View
+              key={section.mode}
+              style={{
+                flex: isWideScreen ? 1 : undefined,
+                width: isWideScreen ? undefined : "100%",
+              }}
+            >
+              <EntrySection
+                title={section.title}
+                data={section.data}
+                emptyTitle={section.emptyTitle}
+                emptyMessage={section.emptyMessage}
+                actionLabel={section.actionLabel}
+                onAddPress={() => openAddModal(section.mode)}
+                onEdit={openEditModal}
+              />
+            </View>
+          ))}
+        </View>
+        <Spacer />
+        <DashboardFooter totalBills={bills.length} lastUpdated={undefined} />
       </ScrollView>
 
       {/* Add / Edit Bill Modal */}
-      <AddBillModal
-        visible={modalVisible}
-        onDismiss={() => {
-          setModalVisible(false);
-          setEditingEntry(undefined);
-        }}
-        entry={editingEntry}
+      <BillModal
+        visible={modalVisible && billMode === "bill"}
+        onDismiss={handleModalDismiss}
+        entry={
+          editingEntry && !editingEntry.isInstallment ? editingEntry : undefined
+        }
       />
 
-      {/* FAB */}
-      <FAB
-        style={{
-          position: "absolute",
-          right: metrics.spacing,
-          bottom: metrics.spacing * 2,
-          backgroundColor: theme.colors.primary,
-        }}
-        icon={({ size }) => (
-          <Ionicons name="add" size={size} color={theme.colors.surface} />
-        )}
-        onPress={() => setModalVisible(true)}
+      {/* Add / Edit Installment Modal */}
+      <InstallmentModal
+        visible={modalVisible && billMode === "installment"}
+        onDismiss={handleModalDismiss}
+        entry={
+          editingEntry && editingEntry.isInstallment ? editingEntry : undefined
+        }
       />
     </View>
   );

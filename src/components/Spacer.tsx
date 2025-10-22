@@ -1,4 +1,5 @@
 import { StyleProp, View, ViewStyle } from "react-native";
+import { moderateScale } from "react-native-size-matters";
 
 interface SpacerProps {
   size?: number;
@@ -7,7 +8,7 @@ interface SpacerProps {
 }
 
 export const Spacer = ({
-  size = 16,
+  size = moderateScale(8),
   horizontal = false,
   style,
 }: SpacerProps) => {

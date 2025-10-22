@@ -1,35 +1,64 @@
-export type Frequency = "Monthly" | "Bi-Monthly" | "Weekly" | "One-time";
+// Frequencies
+export type Frequency =
+  | "Weekly"
+  | "Bi-Weekly"
+  | "Monthly"
+  | "Bi-Monthly"
+  | "One-time";
 
-type Bill = {
+export const FREQUENCIES = [
+  { label: "Weekly", days: 7 },
+  { label: "Bi-Weekly", days: 14 },
+  { label: "Monthly", days: 30 },
+  { label: "Bi-Monthly", days: 60 },
+  { label: "One-time", days: 0 },
+] as const;
+
+// Shared Bill/Installment Base
+export type BillMode = "bill" | "installment";
+
+export interface BaseEntry {
   id: string;
   name: string;
-  amount: number; // recurring payment amount
-  remainingBalance?: number;
+  amount: number;
   frequency: Frequency;
-  nextDueDate?: string; // ISO date string yyyy-mm-dd
+  startDate?: string;
+  nextDueDate?: string;
   endDate?: string;
   notes?: string;
-  isInstallment?: false;
-  autoAdvance?: boolean;
-};
-
-type Installment = {
-  id: string;
-  name: string;
-  amount: number; // installment payment amount
-  remainingBalance?: number; // keeps track
-  frequency: Frequency;
-  nextDueDate?: string;
-  endDate?: string; // when installments end
   lastPaymentDate?: string;
-  status?: string;
-  isInstallment: true;
+  status?: "Active" | "Completed" | "Overdue" | "Pending";
   autoAdvance?: boolean;
-  payments?: { dueDate: string; amount: number; paid: boolean }[];
-};
+}
 
-export type UserProfile = {
-  nickname?: string;
-};
+// Bill Type (Recurring payments)
+export interface Bill extends BaseEntry {
+  isInstallment?: false;
+  numPayments?: number;
+}
 
+// Installment Type (Amortized or multi-payment items)
+export interface Installment extends BaseEntry {
+  isInstallment: true;
+  numPayments: number;
+  payments: { dueDate: string; amount: number; paid: boolean }[];
+  remainingBalance?: number;
+  progress?: number; // 0–100%
+}
+
+// Entry Union and User Profile
 export type Entry = Bill | Installment;
+
+export interface UserProfile {
+  nickname?: string;
+}
+
+// Section Config (used in Dashboard)
+export interface SectionConfig {
+  title: string;
+  data: Entry[];
+  emptyTitle: string;
+  emptyMessage: string;
+  actionLabel: string;
+  mode: BillMode;
+}

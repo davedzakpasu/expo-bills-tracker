@@ -1,25 +1,37 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { loadJSON, saveJSON } from "../hooks/useStorage";
-import { Entry, UserProfile } from "../types";
+import { Bill, Entry, Installment, UserProfile } from "../types";
+import { updateInstallmentProgress } from "../utils/installments";
 
-type AppState = {
+// ─────────────────────────────────────────────
+// Context State Definition
+// ─────────────────────────────────────────────
+
+interface AppState {
   bills: Entry[];
   user?: UserProfile | null;
-  addBill: (item: Entry) => Promise<void>;
-  updateBill: (id: string, patch: Partial<Entry>) => Promise<void>;
+  addEntry: (item: Entry) => Promise<void>;
+  updateEntry: <T extends Entry>(
+    id: string,
+    patch: Partial<T>
+  ) => Promise<void>;
   markPaid: (id: string) => Promise<void>;
-  deleteBill: (id: string) => Promise<void>;
+  deleteEntry: (id: string) => Promise<void>;
   setUser: (u: UserProfile) => Promise<void>;
   resetApp: () => void;
-};
+}
 
-const ctx = createContext<AppState>({} as AppState);
+const AppContext = createContext<AppState>({} as AppState);
 
 const STORAGE_KEYS = {
   BILLS: "@bills_tracker_bills_v1",
   USER: "@bills_tracker_user_v1",
 };
+
+// ─────────────────────────────────────────────
+// AppProvider Implementation
+// ─────────────────────────────────────────────
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -47,12 +59,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user]);
 
   // ➕ Add new bill/installment
-  const addBill = async (item: Entry) => {
+  const addEntry = async (item: Entry) => {
     setBills((prev) => [item, ...prev]);
   };
 
-  // 🧩 Update bill
-  const updateBill = async (id: string, patch: Partial<Entry>) => {
+  // 🧩 Update existing entry
+  const updateEntry = async <T extends Entry>(
+    id: string,
+    patch: Partial<T>
+  ) => {
     setBills((prev) =>
       prev.map((b) => (b.id === id ? ({ ...b, ...patch } as Entry) : b))
     );
@@ -65,92 +80,113 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const now = new Date();
 
+    // 🧾 INSTALLMENT LOGIC
     if (target.isInstallment) {
-      // --- INSTALLMENT LOGIC ---
-      const inst = target as Entry;
-      const newRemaining = Math.max(
-        0,
-        (inst.remainingBalance || 0) - inst.amount
-      );
-
-      const updates: Partial<Entry> = {
-        remainingBalance: newRemaining,
-        lastPaymentDate: now.toISOString().slice(0, 10),
-      };
-
-      if (newRemaining === 0) {
-        updates.nextDueDate = undefined;
-        updates.status = "Completed";
-        Alert.alert("Installment", `${inst.name} fully paid.`);
-      } else if (inst.nextDueDate) {
-        const next = new Date(inst.nextDueDate);
-        // Use frequency (in weeks or months)
-        if (inst.frequency?.toLowerCase().includes("week")) {
-          next.setDate(next.getDate() + 7);
-        } else if (inst.frequency?.toLowerCase().includes("bi")) {
-          next.setDate(next.getDate() + 14);
-        } else {
-          next.setMonth(next.getMonth() + 1);
-        }
-        updates.nextDueDate = next.toISOString().slice(0, 10);
-      }
-
-      await updateBill(id, updates);
-    } else {
-      // --- RECURRING BILL LOGIC ---
-      const b = target as Entry;
-      if (!b.nextDueDate) {
-        Alert.alert("Bill", "No next due date set for this bill.");
+      const inst = target as Installment;
+      if (!inst.payments?.length) {
+        Alert.alert("Installment", "No payment schedule found.");
         return;
       }
 
-      const next = new Date(b.nextDueDate);
-      const freq = b.frequency?.toLowerCase() || "monthly";
+      const payments = [...inst.payments];
+      const nextUnpaidIndex = payments.findIndex((p) => !p.paid);
 
-      if (freq.includes("week")) {
-        next.setDate(next.getDate() + 7);
-      } else if (freq.includes("bi")) {
-        next.setDate(next.getDate() + 14);
-      } else {
-        next.setMonth(next.getMonth() + 1);
+      if (nextUnpaidIndex === -1) {
+        Alert.alert("Installment", `${inst.name} is already fully paid.`);
+        return;
       }
 
-      await updateBill(id, {
-        nextDueDate: next.toISOString().slice(0, 10),
+      payments[nextUnpaidIndex].paid = true;
+
+      const { remainingBalance, nextDue, progressPercent } =
+        updateInstallmentProgress({ ...inst, payments });
+
+      const updates: Partial<Installment> = {
+        payments,
         lastPaymentDate: now.toISOString().slice(0, 10),
-      });
+        nextDueDate: nextDue,
+        status: nextDue ? "Active" : "Completed",
+        remainingBalance,
+        progress: progressPercent,
+      };
+
+      await updateEntry(id, updates);
+
+      if (!nextDue) {
+        Alert.alert("Installment", `${inst.name} is now fully paid!`);
+      } else if (inst.autoAdvance !== false) {
+        Alert.alert(
+          "Installment",
+          `Payment recorded. Next due: ${new Date(nextDue).toLocaleDateString(
+            "fr"
+          )}`
+        );
+      }
+
+      return;
+    }
+
+    // 💸 RECURRING BILL LOGIC
+    const bill = target as Bill;
+    if (!bill.nextDueDate) {
+      Alert.alert("Bill", "No next due date set for this bill.");
+      return;
+    }
+
+    const next = new Date(bill.nextDueDate);
+    const freq = bill.frequency.toLowerCase();
+
+    if (freq.includes("bi-month")) next.setMonth(next.getMonth() + 2);
+    else if (freq.includes("month")) next.setMonth(next.getMonth() + 1);
+    else if (freq.includes("bi-week")) next.setDate(next.getDate() + 14);
+    else if (freq.includes("week")) next.setDate(next.getDate() + 7);
+
+    const updates: Partial<Bill> = {
+      nextDueDate: next.toISOString().slice(0, 10),
+      lastPaymentDate: now.toISOString().slice(0, 10),
+    };
+
+    await updateEntry(id, updates);
+
+    Alert.alert("Bill", `${bill.name} marked as paid.`);
+  };
+
+  // 🗑 Delete entry (bill or installment)
+  const deleteEntry = async (id: string) => {
+    try {
+      const updated = bills.filter((b) => b.id !== id);
+      setBills(updated);
+      await saveJSON(STORAGE_KEYS.BILLS, updated);
+    } catch (error) {
+      Alert.alert("Error", `Failed to delete the entry: ${id}`);
     }
   };
 
-  // 🗑 Delete bill/installment
-  const deleteBill = async (id: string) => {
-    setBills((prev) => prev.filter((b) => b.id !== id));
-  };
-
-  const setUser = async (u: UserProfile) => {
-    setUserState(u);
-  };
+  // 👤 User Management
+  const setUser = async (u: UserProfile) => setUserState(u);
 
   const resetApp = () => {
+    setBills([]);
     setUserState(null);
   };
 
   return (
-    <ctx.Provider
+    <AppContext.Provider
       value={{
         bills,
         user,
-        addBill,
-        updateBill,
+        addEntry,
+        updateEntry,
         markPaid,
-        deleteBill,
+        deleteEntry,
         setUser,
         resetApp,
       }}
     >
       {children}
-    </ctx.Provider>
+    </AppContext.Provider>
   );
 };
 
-export const useAppContext = () => useContext(ctx);
+// Custom hook
+export const useAppContext = () => useContext(AppContext);

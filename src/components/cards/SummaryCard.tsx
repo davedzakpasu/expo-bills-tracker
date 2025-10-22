@@ -45,6 +45,7 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
             styles.summaryTitle,
             { color: theme.colors.onSurfaceVariant },
           ]}
+          adjustsFontSizeToFit
           numberOfLines={2}
         >
           {title}

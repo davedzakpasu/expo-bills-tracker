@@ -10,3 +10,8 @@ export function daysUntil(iso?: string) {
   const diff = Math.ceil((d.getTime() - now.getTime()) / (1000 * 3600 * 24));
   return diff;
 }
+
+export function formatDate(iso?: string) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-CA");
+}
