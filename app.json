@@ -22,11 +22,13 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.daved7.expobillstracker"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
+      "ssr": false,
       "favicon": "./assets/favicon.png"
     }
   }
