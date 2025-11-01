@@ -5,7 +5,7 @@ export default {
     platforms: ["ios", "android", "web"],
     web: {
       bundler: "metro",
-      output: "static",
+      output: "single",
       ssr: false, // force disable SSR (no expo-router)
       favicon: "./assets/favicon.png",
     },
