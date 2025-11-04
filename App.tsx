@@ -1,5 +1,6 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "react-native";
+import "react-native-get-random-values";
 import "react-native-reanimated";
 import { AppProvider } from "./src/context/AppContext";
 import { ThemeProvider, useThemeContext } from "./src/context/ThemeContext";

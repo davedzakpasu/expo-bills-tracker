@@ -16,7 +16,7 @@ import InstallmentModal from "src/modals/InstallmentModal";
 import { useAppContext } from "../context/AppContext";
 import { useThemeContext } from "../context/ThemeContext";
 import { createAppStyles, tokens } from "../theme/styles";
-import { billmode, Entry, SectionConfig } from "../types";
+import { BillMode, Entry, SectionConfig } from "../types";
 
 const createSectionsConfig = (
   bills: Entry[],
@@ -47,6 +47,7 @@ export default function DashboardScreen({ navigation }: any) {
     markPaid,
     updateEntry: updateBill,
     addEntry: addBill,
+    deleteEntry,
     resetApp,
   } = useAppContext();
   const theme = useTheme();
@@ -119,7 +120,7 @@ export default function DashboardScreen({ navigation }: any) {
     });
   };
 
-  const openAddModal = (mode: billmode) => {
+  const openAddModal = (mode: BillMode) => {
     setEditingEntry(undefined);
     setBillMode(mode);
     setModalVisible(true);
@@ -304,6 +305,7 @@ export default function DashboardScreen({ navigation }: any) {
                 actionLabel={section.actionLabel}
                 onAddPress={() => openAddModal(section.mode)}
                 onEdit={openEditModal}
+                onDelete={deleteEntry}
               />
             </View>
           ))}

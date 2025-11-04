@@ -159,23 +159,27 @@ export default function BillModal({ visible, onDismiss, entry }: Props) {
   };
 
   const handleSave = async () => {
-    if (!canSave) return;
+    try {
+      if (!canSave) return;
 
-    const newEntry: Entry = {
-      id: entry?.id ?? uuidv4(),
-      name: name.trim(),
-      amount: parseFloat(amount),
-      frequency,
-      nextDueDate,
-      autoAdvance,
-    };
+      const newEntry: Entry = {
+        id: entry?.id ?? uuidv4(),
+        name: name.trim(),
+        amount: parseFloat(amount),
+        frequency,
+        nextDueDate,
+        autoAdvance,
+      };
 
-    if (entry) {
-      await updateBill(entry.id, newEntry);
-    } else {
-      await addBill(newEntry);
+      if (entry) {
+        await updateBill(entry.id, newEntry);
+      } else {
+        await addBill(newEntry);
+      }
+      onDismiss();
+    } catch (err) {
+      console.error("handleSave error:", err);
     }
-    onDismiss();
   };
 
   useEffect(() => {
