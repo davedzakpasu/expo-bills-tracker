@@ -1,4 +1,5 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { toLocalISODate } from "@utils/formatters";
 import React, { useState } from "react";
 import { Platform, TouchableOpacity, View } from "react-native";
 import { Button, Text, TextInput } from "react-native-paper";
@@ -20,7 +21,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const handleChange = (_: any, selectedDate?: Date) => {
     setShow(false);
     if (selectedDate) {
-      const formatted = selectedDate.toISOString().slice(0, 10);
+      const formatted = toLocalISODate(selectedDate);
       onChange(formatted);
     }
   };
@@ -29,7 +30,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const inputRef = React.useRef<HTMLInputElement | null>(null);
 
     const handleWebDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      onChange(e.target.value);
+      onChange(toLocalISODate(e.target.value));
     };
 
     const openDatePicker = () => {

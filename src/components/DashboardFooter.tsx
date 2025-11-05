@@ -34,7 +34,7 @@ export default function DashboardFooter({
       style={{
         paddingVertical: tokens.spacing.lg,
         paddingHorizontal: tokens.spacing.md,
-        // backgroundColor: theme.colors.surfaceVariant,
+        // marginBottom: tokens.spacing.lg,
         borderTopWidth: 1,
         borderTopColor: theme.colors.outline,
         opacity: 0.8,

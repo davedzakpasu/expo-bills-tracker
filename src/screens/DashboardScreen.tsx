@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { IconButton, Text, useTheme } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 import BillModal from "src/modals/BillModal";
 import InstallmentModal from "src/modals/InstallmentModal";
 import { useAppContext } from "../context/AppContext";
@@ -205,132 +206,151 @@ export default function DashboardScreen({ navigation }: any) {
   // };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.elevation.level2 }}>
-      {/* Sticky Header */}
-      <View style={styles.stickyHeader}>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Ionicons
-            name="apps-outline"
-            size={28}
-            color={theme.colors.primary}
-            style={{ marginRight: tokens.spacing.md * 0.7 }}
-          />
-          <Text
-            style={{
-              fontSize: 20,
-              fontWeight: "700",
-              color: theme.colors.primary,
-            }}
-          >
-            Bills Tracker
-          </Text>
-        </View>
-
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <IconButton
-            icon={() => (
-              <Ionicons
-                name={effectiveMode === "light" ? "sunny" : "moon"}
-                size={24}
-                color={theme.colors.primary}
-              />
-            )}
-            style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
-            onPress={toggleTheme}
-          />
-
-          <IconButton
-            icon={() => (
-              <Ionicons
-                name="settings-outline"
-                size={24}
-                color={theme.colors.primary}
-              />
-            )}
-            style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
-            onPress={() => navigation.navigate("Settings")}
-          />
-
-          <IconButton
-            icon={() => (
-              <Ionicons
-                name="exit-outline"
-                size={24}
-                color={theme.colors.primary}
-              />
-            )}
-            style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
-            onPress={handleExit}
-          />
-        </View>
-      </View>
-
-      {/* Scrollable Content */}
-      <ScrollView
-        contentContainerStyle={styles.screen}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Greeting */}
-        <Text style={styles.title}>{greeting}</Text>
-
-        {/* Summary */}
-        <DashboardSummary
-          totalMonthly={totalMonthly}
-          totalRemaining={totalRemaining}
-          overdue={overdue}
-        />
-        <Spacer />
-
-        {/* Sections Container - Responsive Layout */}
-        <View
-          style={{
-            flexDirection: isWideScreen ? "row" : "column",
-            gap: tokens.spacing.md,
-            width: "100%",
-          }}
-        >
-          {sections.map((section) => (
-            <View
-              key={section.mode}
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: theme.colors.background,
+      }}
+      edges={["top", "left", "right"]}
+    >
+      <View style={{ flex: 1, backgroundColor: theme.colors.elevation.level2 }}>
+        {/* Sticky Header */}
+        <View style={styles.stickyHeader}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Ionicons
+              name="apps-outline"
+              size={28}
+              color={theme.colors.primary}
+              style={{ marginRight: tokens.spacing.md * 0.7 }}
+            />
+            <Text
               style={{
-                flex: isWideScreen ? 1 : undefined,
-                width: isWideScreen ? undefined : "100%",
+                fontSize: 20,
+                fontWeight: "700",
+                color: theme.colors.primary,
               }}
             >
-              <EntrySection
-                title={section.title}
-                data={section.data}
-                emptyTitle={section.emptyTitle}
-                emptyMessage={section.emptyMessage}
-                actionLabel={section.actionLabel}
-                onAddPress={() => openAddModal(section.mode)}
-                onEdit={openEditModal}
-                onDelete={deleteEntry}
-              />
-            </View>
-          ))}
+              Bills Tracker
+            </Text>
+          </View>
+
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <IconButton
+              icon={() => (
+                <Ionicons
+                  name={effectiveMode === "light" ? "sunny" : "moon"}
+                  size={24}
+                  color={theme.colors.primary}
+                />
+              )}
+              style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
+              onPress={toggleTheme}
+            />
+
+            <IconButton
+              icon={() => (
+                <Ionicons
+                  name="settings-outline"
+                  size={24}
+                  color={theme.colors.primary}
+                />
+              )}
+              style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
+              onPress={() => navigation.navigate("Settings")}
+            />
+
+            <IconButton
+              icon={() => (
+                <Ionicons
+                  name="exit-outline"
+                  size={24}
+                  color={theme.colors.primary}
+                />
+              )}
+              style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
+              onPress={handleExit}
+            />
+          </View>
         </View>
-        <Spacer />
-        <DashboardFooter totalBills={bills.length} lastUpdated={undefined} />
-      </ScrollView>
 
-      {/* Add / Edit Bill Modal */}
-      <BillModal
-        visible={modalVisible && billMode === "bill"}
-        onDismiss={handleModalDismiss}
-        entry={
-          editingEntry && !editingEntry.isInstallment ? editingEntry : undefined
-        }
-      />
+        {/* Scrollable Content */}
+        <ScrollView
+          contentContainerStyle={styles.screen}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Greeting */}
+          <Text
+            style={[
+              styles.title,
+              { color: theme.colors.onSurface, alignSelf: "center" },
+            ]}
+          >
+            {greeting}
+          </Text>
 
-      {/* Add / Edit Installment Modal */}
-      <InstallmentModal
-        visible={modalVisible && billMode === "installment"}
-        onDismiss={handleModalDismiss}
-        entry={
-          editingEntry && editingEntry.isInstallment ? editingEntry : undefined
-        }
-      />
-    </View>
+          {/* Summary */}
+          <DashboardSummary
+            totalMonthly={totalMonthly}
+            totalRemaining={totalRemaining}
+            overdue={overdue}
+          />
+          <Spacer />
+
+          {/* Sections Container - Responsive Layout */}
+          <View
+            style={{
+              flexDirection: isWideScreen ? "row" : "column",
+              gap: tokens.spacing.md,
+              width: "100%",
+            }}
+          >
+            {sections.map((section) => (
+              <View
+                key={section.mode}
+                style={{
+                  flex: isWideScreen ? 1 : undefined,
+                  width: isWideScreen ? undefined : "100%",
+                }}
+              >
+                <EntrySection
+                  title={section.title}
+                  data={section.data}
+                  emptyTitle={section.emptyTitle}
+                  emptyMessage={section.emptyMessage}
+                  actionLabel={section.actionLabel}
+                  onAddPress={() => openAddModal(section.mode)}
+                  onEdit={openEditModal}
+                  onDelete={deleteEntry}
+                />
+              </View>
+            ))}
+          </View>
+          <Spacer />
+          <DashboardFooter totalBills={bills.length} lastUpdated={undefined} />
+        </ScrollView>
+
+        {/* Add / Edit Bill Modal */}
+        <BillModal
+          visible={modalVisible && billMode === "bill"}
+          onDismiss={handleModalDismiss}
+          entry={
+            editingEntry && !editingEntry.isInstallment
+              ? editingEntry
+              : undefined
+          }
+        />
+
+        {/* Add / Edit Installment Modal */}
+        <InstallmentModal
+          visible={modalVisible && billMode === "installment"}
+          onDismiss={handleModalDismiss}
+          entry={
+            editingEntry && editingEntry.isInstallment
+              ? editingEntry
+              : undefined
+          }
+        />
+      </View>
+    </SafeAreaView>
   );
 }

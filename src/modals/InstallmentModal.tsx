@@ -1,5 +1,7 @@
 import InstallmentCard from "@components/cards/InstallmentCard";
 import { DatePicker } from "@components/DatePicker";
+import { useExchangeRate } from "@hooks/useExchangeRate";
+import { toLocalISODate } from "@utils/formatters";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -18,6 +20,7 @@ import {
   HelperText,
   IconButton,
   Portal,
+  Snackbar,
   Surface,
   Text,
   TextInput,
@@ -48,10 +51,27 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
     entry?.numPayments?.toString() ?? ""
   );
   const [frequency, setFrequency] = useState(entry?.frequency ?? "Monthly");
-  const [startDate, setStartDate] = useState(entry?.startDate ?? "");
+  const [startDate, setStartDate] = useState(
+    entry?.startDate ?? toLocalISODate(new Date())
+  );
   const [notes, setNotes] = useState(entry?.notes ?? "");
   const [autoAdvance, setAutoAdvance] = useState(entry?.autoAdvance ?? false);
   const [showPreview, setShowPreview] = useState(false);
+
+  const {
+    rate: eurToCadRate,
+    loading,
+    error,
+    refresh,
+  } = useExchangeRate("EUR", "CAD");
+
+  const [isXof, setIsXof] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    visible: false,
+    message: "",
+    type: "info" as "info" | "error",
+  });
+  const RATE_KEY = "@eur_to_cad_rate_v1";
 
   // ADDED: Track which fields have been touched for validation
   const [touched, setTouched] = useState({
@@ -76,6 +96,10 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const previewAnim = useRef(new Animated.Value(0)).current;
 
+  const showSnackbar = (message: string, type: "info" | "error" = "info") => {
+    setSnackbar({ visible: true, message, type });
+  };
+
   // FIXED: Always show preview on wide screens
   useEffect(() => {
     if (isWideScreen) {
@@ -91,7 +115,7 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
       setAmount(entry.amount?.toString() ?? "");
       setNumPayments(entry.numPayments?.toString() ?? "");
       setFrequency(entry.frequency ?? "Monthly");
-      setStartDate(entry.startDate ?? "");
+      setStartDate(entry.startDate ?? toLocalISODate(new Date()));
       setNotes(entry.notes ?? "");
       setAutoAdvance(entry.autoAdvance ?? false);
       setTouched({
@@ -106,7 +130,7 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
       setAmount("");
       setNumPayments("");
       setFrequency("Monthly");
-      setStartDate("");
+      setStartDate(toLocalISODate(new Date()));
       setNotes("");
       setAutoAdvance(false);
       setShowPreview(false);
@@ -155,43 +179,13 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
     if (/^\d*$/.test(value)) setNumPayments(value);
   };
 
-  // ADDED: Calculate next due dates for preview
-  const getNextDueDates = (
-    startDate: string,
-    frequency: string,
-    numPayments: number
-  ) => {
-    if (!startDate || numPayments < 1) return [];
-
-    const result: Date[] = [];
-    const start = new Date(startDate);
-    const maxPreview = Math.min(numPayments, 5); // Show max 5 dates
-
-    for (let i = 0; i < maxPreview; i++) {
-      const next = new Date(start);
-
-      switch (frequency) {
-        case "Weekly":
-          next.setDate(start.getDate() + 7 * i);
-          break;
-        case "Bi-Weekly":
-          next.setDate(start.getDate() + 14 * i);
-          break;
-        case "Monthly":
-          next.setMonth(start.getMonth() + i);
-          break;
-        case "Bi-Monthly":
-          next.setMonth(start.getMonth() + 2 * i);
-          break;
-        default:
-          next.setMonth(start.getMonth() + i);
-      }
-
-      result.push(next);
+  useEffect(() => {
+    if (error) {
+      setSnackbar({ visible: true, message: error, type: "error" });
     }
+  }, [error]);
 
-    return result;
-  };
+  const fromLocalISO = (iso: string) => new Date(iso + "T00:00:00");
 
   const generateSchedule = (
     paymentAmount: number,
@@ -201,7 +195,7 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
   ) => {
     const payments: { dueDate: string; amount: number; paid: boolean }[] = [];
 
-    const start = new Date(startDate);
+    const start = fromLocalISO(startDate);
 
     for (let i = 0; i < numPayments; i++) {
       const nextDate = new Date(start);
@@ -230,7 +224,7 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
       }
 
       payments.push({
-        dueDate: nextDate.toISOString().split("T")[0],
+        dueDate: toLocalISODate(nextDate),
         amount: paymentAmount,
         paid: false,
       });
@@ -257,7 +251,15 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
   const handleSave = async () => {
     if (!canSave) return;
 
-    const paymentAmount = parseFloat(amount);
+    let paymentAmount = parseFloat(amount);
+
+    if (isXof && eurToCadRate > 0) {
+      const EUR_PER_XOF = 1 / 655.957;
+      const eurAmount = paymentAmount * EUR_PER_XOF;
+      const cadAmount = eurAmount * eurToCadRate;
+      paymentAmount = cadAmount;
+    }
+
     const num = parseInt(numPayments, 10);
     const payments = generateSchedule(paymentAmount, num, startDate, frequency);
 
@@ -274,11 +276,9 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
       payments,
     };
 
-    if (entry) {
-      await updateEntry(entry.id, newEntry);
-    } else {
-      await addEntry(newEntry);
-    }
+    if (entry) await updateEntry(entry.id, newEntry);
+    else await addEntry(newEntry);
+
     onDismiss();
   };
 
@@ -397,6 +397,33 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
                         Amount must be greater than 0
                       </HelperText>
                     )}
+                  <View style={stylesPortal.checkboxRow}>
+                    <Checkbox
+                      status={isXof ? "checked" : "unchecked"}
+                      onPress={() => setIsXof(!isXof)}
+                    />
+                    <Text style={{ flex: 1 }}>
+                      Amount is in XOF (convert to CAD)
+                    </Text>
+                  </View>
+                  {isXof && eurToCadRate > 0 && (
+                    <Text
+                      variant="bodySmall"
+                      style={{ color: theme.colors.secondary }}
+                    >
+                      Current EUR→CAD rate: {eurToCadRate.toFixed(4)}
+                    </Text>
+                  )}
+                  {isXof && (
+                    <Button
+                      icon="refresh"
+                      mode="outlined"
+                      loading={loading}
+                      onPress={() => refresh()}
+                    >
+                      Refresh rate
+                    </Button>
+                  )}
 
                   {/* SECTION: Installment Details */}
                   <Divider style={{ marginVertical: tokens.spacing.md }} />
@@ -574,9 +601,7 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
                         autoAdvance,
                         payments: [
                           {
-                            dueDate:
-                              startDate ||
-                              new Date().toISOString().split("T")[0],
+                            dueDate: startDate || toLocalISODate(new Date()),
                             amount: parseFloat(amount) || 0,
                             paid: false,
                           },
@@ -606,6 +631,32 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
           </Surface>
         </Animated.View>
       </Animated.View>
+      <Snackbar
+        visible={snackbar.visible}
+        onDismiss={() => setSnackbar((s) => ({ ...s, visible: false }))}
+        duration={4000}
+        style={{
+          backgroundColor:
+            snackbar.type === "error"
+              ? theme.colors.errorContainer
+              : theme.colors.inverseSurface,
+        }}
+        action={{
+          label: "OK",
+          onPress: () => setSnackbar((s) => ({ ...s, visible: false })),
+        }}
+      >
+        <Text
+          style={{
+            color:
+              snackbar.type === "error"
+                ? theme.colors.onErrorContainer
+                : theme.colors.inverseOnSurface,
+          }}
+        >
+          {snackbar.message}
+        </Text>
+      </Snackbar>
     </Portal>
   );
 }

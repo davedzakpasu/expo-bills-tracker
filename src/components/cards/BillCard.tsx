@@ -217,7 +217,9 @@ export default function BillCard({
                       textAlign: "right",
                     }}
                   >
-                    {new Date(item.nextDueDate).toLocaleDateString("fr")}
+                    {new Date(
+                      item.nextDueDate + "T00:00:00"
+                    ).toLocaleDateString("fr")}
                   </Text>
                 </View>
               )}

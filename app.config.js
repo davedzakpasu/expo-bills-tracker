@@ -11,9 +11,21 @@ export default {
     },
     ios: {
       bundleIdentifier: "com.davedzakpasu.billstracker",
+      jsEngine: "hermes",
+      icon: "./assets/icon.png",
     },
     android: {
       package: "com.davedzakpasu.billstracker",
+      jsEngine: "hermes",
+      adaptiveIcon: {
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#2196F3",
+      },
+    },
+    splash: {
+      image: "./assets/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#2196F3",
     },
     experiments: {
       typedRoutes: false, // force disable expo-router auto detection

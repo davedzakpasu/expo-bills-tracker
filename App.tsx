@@ -8,6 +8,10 @@ import AppNavigator from "./src/navigation/AppNavigator";
 
 const AppContent = () => {
   const { mode } = useThemeContext();
+  if (!__DEV__) {
+    console.log = () => {};
+    console.warn = () => {};
+  }
 
   return (
     <>

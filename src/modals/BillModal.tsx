@@ -1,4 +1,5 @@
 import { DatePicker } from "@components/DatePicker";
+import { toLocalISODate } from "@utils/formatters";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -51,7 +52,7 @@ export default function BillModal({ visible, onDismiss, entry }: Props) {
   const [amount, setAmount] = useState(entry?.amount?.toString() ?? "");
   const [frequency, setFrequency] = useState(entry?.frequency ?? "Monthly");
   const [nextDueDate, setNextDueDate] = useState(
-    entry?.nextDueDate ?? new Date().toISOString().slice(0, 10)
+    entry?.nextDueDate ?? toLocalISODate(new Date())
   );
   const [autoAdvance, setAutoAdvance] = useState(entry?.autoAdvance ?? false);
   const [showPreview, setShowPreview] = useState(false);
@@ -90,15 +91,13 @@ export default function BillModal({ visible, onDismiss, entry }: Props) {
       setName(entry.name ?? "");
       setAmount(entry.amount?.toString() ?? "");
       setFrequency(entry.frequency ?? "Monthly");
-      setNextDueDate(
-        entry.nextDueDate ?? new Date().toISOString().slice(0, 10)
-      );
+      setNextDueDate(entry.nextDueDate ?? toLocalISODate(new Date()));
       setAutoAdvance(entry.autoAdvance ?? false);
     } else if (visible && !entry) {
       setName("");
       setAmount("");
       setFrequency("Monthly");
-      setNextDueDate(new Date().toISOString().slice(0, 10));
+      setNextDueDate(toLocalISODate(new Date()));
 
       setAutoAdvance(false);
       setShowPreview(false);
@@ -167,7 +166,7 @@ export default function BillModal({ visible, onDismiss, entry }: Props) {
         name: name.trim(),
         amount: parseFloat(amount),
         frequency,
-        nextDueDate,
+        nextDueDate: nextDueDate,
         autoAdvance,
       };
 
@@ -219,9 +218,15 @@ export default function BillModal({ visible, onDismiss, entry }: Props) {
               </Text>
               <IconButton
                 icon="close"
-                size={24}
+                size={26}
                 onPress={onDismiss}
                 iconColor={theme.colors.onSurface}
+                style={{
+                  backgroundColor: theme.dark
+                    ? "rgba(255,255,255,0.1)"
+                    : "rgba(0,0,0,0.05)",
+                  borderRadius: 999,
+                }}
               />
             </View>
 
@@ -243,7 +248,7 @@ export default function BillModal({ visible, onDismiss, entry }: Props) {
                   <Text
                     style={{
                       fontSize: 16,
-                      fontWeight: "600",
+                      fontWeight: "700",
                       marginBottom: tokens.spacing.sm,
                       color: theme.colors.primary,
                     }}
@@ -277,7 +282,7 @@ export default function BillModal({ visible, onDismiss, entry }: Props) {
                   <Text
                     style={{
                       fontSize: 16,
-                      fontWeight: "600",
+                      fontWeight: "700",
                       marginBottom: tokens.spacing.sm,
                       color: theme.colors.primary,
                     }}

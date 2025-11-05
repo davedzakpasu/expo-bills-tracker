@@ -15,3 +15,10 @@ export function formatDate(iso?: string) {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString("en-CA");
 }
+
+export const toLocalISODate = (date: Date | string) => {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 10);
+};

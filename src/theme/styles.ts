@@ -24,7 +24,7 @@ export const tokens = {
   typography: {
     title: {
       fontSize: moderateScale(14),
-      fontWeight: "600" as const,
+      fontWeight: "700" as const,
     },
     subtitle: {
       fontSize: moderateScale(10),
@@ -53,10 +53,9 @@ export const createAppStyles = (theme: MD3Theme) =>
   StyleSheet.create({
     // --- Layout ---
     screen: {
-      flex: 1,
+      flexGrow: 1,
+      paddingBottom: tokens.spacing.xl,
       paddingHorizontal: tokens.spacing.md,
-      paddingVertical: tokens.spacing.md,
-      gap: moderateScale(12),
     },
 
     // --- Card ---
@@ -155,10 +154,13 @@ export const createAppStyles = (theme: MD3Theme) =>
     },
     stickyHeader: {
       flexDirection: "row",
+      flexWrap: "wrap",
       alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: tokens.spacing.md * 1.3,
       paddingVertical: tokens.spacing.sm,
+      paddingTop: tokens.spacing.sm,
+      paddingBottom: tokens.spacing.xs,
       backgroundColor: theme.colors.background,
       elevation: 6, // Android shadow
       shadowColor: theme.dark ? "#000" : "#333", // iOS shadow
@@ -271,6 +273,11 @@ export const createAppStyles = (theme: MD3Theme) =>
       borderTopWidth: 1,
       borderTopColor: "rgba(0,0,0,0.05)",
       padding: 10,
+    },
+    scrollContainer: {
+      flexGrow: 1,
+      paddingHorizontal: tokens.spacing.md,
+      paddingBottom: tokens.spacing.xl,
     },
     markPaidBtn: { flex: 1, borderRadius: 999, minWidth: 120 },
   });
