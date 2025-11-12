@@ -12,21 +12,41 @@ export default {
     ios: {
       bundleIdentifier: "com.davedzakpasu.billstracker",
       jsEngine: "hermes",
-      icon: "./assets/icon.png",
+      icon: {
+        dark: "./assets/icons/ios-dark.png",
+        light: "./assets/icons/ios-light.png",
+        tinted: "./assets/icons/ios-tinted.png",
+      },
     },
     android: {
       package: "com.davedzakpasu.billstracker",
       jsEngine: "hermes",
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./assets/icons/adaptive-icon.png",
+        monochromeImage: "./assets/icons/adaptive-icon.png",
         backgroundColor: "#2196F3",
       },
     },
-    splash: {
-      image: "./assets/splash.png",
-      resizeMode: "contain",
-      backgroundColor: "#2196F3",
-    },
+    // splash: {
+    //   image: "./assets/splash.png",
+    //   resizeMode: "contain",
+    //   backgroundColor: "#2196F3",
+    // },
+    plugins: [
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/icons/splash-icon-light.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#2196F3",
+          dark: {
+            image: "./assets/icons/splash-icon-light.png",
+            backgroundColor: "#000000",
+          },
+        },
+      ],
+    ],
     experiments: {
       typedRoutes: false, // force disable expo-router auto detection
     },
