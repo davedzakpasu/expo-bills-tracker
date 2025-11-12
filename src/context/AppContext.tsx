@@ -10,7 +10,8 @@ import { updateInstallmentProgress } from "../utils/installments";
 
 interface AppState {
   bills: Entry[];
-  user?: UserProfile | null;
+  user?: UserProfile | null | undefined;
+  ready: boolean;
   addEntry: (item: Entry) => Promise<void>;
   updateEntry: <T extends Entry>(
     id: string,
@@ -29,6 +30,12 @@ const STORAGE_KEYS = {
   USER: "@bills_tracker_user_v1",
 };
 
+const isValidUser = (u: any): u is UserProfile =>
+  !!u &&
+  typeof u === "object" &&
+  typeof u.nickname === "string" &&
+  u.nickname.trim().length > 0;
+
 // ─────────────────────────────────────────────
 // AppProvider Implementation
 // ─────────────────────────────────────────────
@@ -38,25 +45,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [bills, setBills] = useState<Entry[]>([]);
   const [user, setUserState] = useState<UserProfile | null>(null);
+  const [ready, setReady] = useState(false);
 
   // 🧠 Load persisted data
   useEffect(() => {
     (async () => {
-      const saved = await loadJSON<Entry[]>(STORAGE_KEYS.BILLS);
-      if (saved) setBills(saved);
-      const u = await loadJSON<UserProfile>(STORAGE_KEYS.USER);
-      if (u) setUserState(u);
+      try {
+        const [savedBills, savedUser] = await Promise.all([
+          loadJSON<Entry[]>(STORAGE_KEYS.BILLS),
+          loadJSON<UserProfile>(STORAGE_KEYS.USER),
+        ]);
+        if (savedBills) setBills(savedBills);
+        setUserState(
+          isValidUser(savedUser)
+            ? { nickname: savedUser?.nickname?.trim() }
+            : null
+        );
+      } finally {
+        setReady(true);
+      }
     })();
   }, []);
 
   // 💾 Persist on changes
   useEffect(() => {
+    if (!ready) return;
     saveJSON(STORAGE_KEYS.BILLS, bills);
-  }, [bills]);
+  }, [bills, ready]);
 
   useEffect(() => {
+    if (!ready) return;
     saveJSON(STORAGE_KEYS.USER, user);
-  }, [user]);
+  }, [user, ready]);
 
   // ➕ Add new bill/installment
   const addEntry = async (item: Entry) => {
@@ -163,7 +183,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // 👤 User Management
-  const setUser = async (u: UserProfile) => setUserState(u);
+  const setUser = async (u: UserProfile) => {
+    // accept only valid nickname through the setter
+    const nick = u?.nickname?.trim();
+    setUserState(nick ? { nickname: nick } : null);
+  };
 
   const resetApp = () => {
     setBills([]);
@@ -175,6 +199,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         bills,
         user,
+        ready,
         addEntry,
         updateEntry,
         markPaid,

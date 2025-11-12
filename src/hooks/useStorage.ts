@@ -2,6 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export async function saveJSON(key: string, value: any) {
   try {
+    if (value == null) {
+      await AsyncStorage.removeItem(key);
+      return;
+    }
     await AsyncStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.warn("saveJSON error", e);

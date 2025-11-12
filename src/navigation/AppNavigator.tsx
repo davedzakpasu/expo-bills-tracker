@@ -15,10 +15,18 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   const { user } = useAppContext();
+  const isSignedIn = !!(
+    user &&
+    typeof user.nickname === "string" &&
+    user.nickname.trim().length > 0
+  );
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!user?.nickname ? (
+    <Stack.Navigator
+      key={isSignedIn ? "app" : "guest"}
+      screenOptions={{ headerShown: false }}
+    >
+      {!isSignedIn ? (
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       ) : (
         <>

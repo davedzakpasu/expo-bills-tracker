@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { StatusBar, View } from "react-native";
 import "react-native-get-random-values";
 import "react-native-reanimated";
-import { AppProvider } from "./src/context/AppContext";
+import { AppProvider, useAppContext } from "./src/context/AppContext";
 import { ThemeProvider, useThemeContext } from "./src/context/ThemeContext";
 import AppNavigator from "./src/navigation/AppNavigator";
 
@@ -37,38 +37,42 @@ const AppContent = () => {
 
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
+  const { ready } = useAppContext();
 
   useEffect(() => {
-    (async () => {
-      try {
-        // 1) Load fonts/assets or anything async you need before showing UI
-        // await Font.loadAsync({
-        //   ...Ionicons.font,
-        // });
-        // 2) AppProvider needs an init (restore user from AsyncStorage),
-        // await someInitFunction();
-      } catch (e) {
-        console.error("Startup error:", e);
-      } finally {
-        setAppIsReady(true);
-      }
-    })();
-  }, []);
+    if (ready) setAppIsReady(true);
+  }, [ready]);
+
+  // useEffect(() => {
+  //   (async () => {
+  //     try {
+  //       // 1) Load fonts/assets or anything async you need before showing UI
+  //       // await Font.loadAsync({
+  //       //   ...Ionicons.font,
+  //       // });
+  //       // 2) AppProvider needs an init (restore user from AsyncStorage),
+  //       // await someInitFunction();
+  //     } catch (e) {
+  //       console.error("Startup error:", e);
+  //     } finally {
+  //       setAppIsReady(true);
+  //     }
+  //   })();
+  // }, []);
 
   // Hide splash once the root view has laid out AND appIsReady is true
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
       try {
         await SplashScreen.hideAsync();
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
   }, [appIsReady]);
 
   if (!appIsReady) {
     return null;
   }
+
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <ThemeProvider>
