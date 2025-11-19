@@ -3,6 +3,7 @@ import DashboardSummary from "@components/DashboardSummary";
 import EntrySection from "@components/EntrySection";
 import { Spacer } from "@components/Spacer";
 import { Ionicons } from "@expo/vector-icons";
+import { makeBillComparator, makeInstallmentComparator } from "@utils/sorting";
 import { useMemo, useState } from "react";
 import {
   ScrollView,
@@ -10,14 +11,27 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { IconButton, Text, useTheme } from "react-native-paper";
+import {
+  Button,
+  Dialog,
+  IconButton,
+  Portal,
+  Text,
+  useTheme,
+} from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BillModal from "src/modals/BillModal";
 import InstallmentModal from "src/modals/InstallmentModal";
 import { useAppContext } from "../context/AppContext";
 import { useThemeContext } from "../context/ThemeContext";
 import { createAppStyles, tokens } from "../theme/styles";
-import { BillMode, Entry, SectionConfig } from "../types";
+import {
+  BillMode,
+  BillSortKey,
+  Entry,
+  InstallmentSortKey,
+  SectionConfig,
+} from "../types";
 
 const createSectionsConfig = (
   bills: Entry[],
@@ -57,15 +71,18 @@ export default function DashboardScreen({ navigation }: any) {
   const colorScheme = useColorScheme();
   const { width } = useWindowDimensions();
 
-  const [modalVisible, setModalVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Entry | undefined>(
     undefined
   );
   const [billMode, setBillMode] = useState<"bill" | "installment">("bill");
   const isWideScreen = width >= 768;
 
-  const [selected, setSelected] = useState<null | (typeof bills)[0]>(null);
-  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
+
+  const [billSortKey, setBillSortKey] = useState<BillSortKey>("nextDue");
+  const [installmentSortKey, setInstallmentSortKey] =
+    useState<InstallmentSortKey>("nextDue");
 
   const effectiveMode: "light" | "dark" =
     mode === "system" ? (colorScheme === "dark" ? "dark" : "light") : mode;
@@ -93,32 +110,42 @@ export default function DashboardScreen({ navigation }: any) {
     const regular = bills.filter((b) => !b.isInstallment);
     const installments = bills.filter((b) => b.isInstallment);
 
-    const monthly = regular.reduce((sum, b) => sum + (b.amount ?? 0), 0);
-    const remaining = installments.reduce(
-      (sum, b) => sum + ((b as any).remainingBalance ?? 0),
-      0
-    );
-    const overdueCount = bills.filter(
-      (b) => b.nextDueDate && new Date(b.nextDueDate) < new Date()
-    ).length;
-
     return {
       regularBills: regular,
       installmentBills: installments,
-      totalMonthly: monthly,
-      totalRemaining: remaining,
-      overdue: overdueCount,
+      totalMonthly: regular.reduce((s, b) => s + (b.amount ?? 0), 0),
+      totalRemaining: installments.reduce(
+        (s, b) => s + ((b as any).remainingBalance ?? 0),
+        0
+      ),
+      overdue: bills.filter(
+        (b) => b.nextDueDate && new Date(b.nextDueDate) < new Date()
+      ).length,
     };
   }, [bills]);
 
-  const sections = createSectionsConfig(regularBills, installmentBills);
+  const sortedRegularBills = useMemo(
+    () => [...regularBills].sort(makeBillComparator(billSortKey)),
+    [regularBills, billSortKey]
+  );
 
-  const handleExit = () => {
+  const sortedInstallmentBills = useMemo(
+    () =>
+      [...installmentBills].sort(makeInstallmentComparator(installmentSortKey)),
+    [installmentBills, installmentSortKey]
+  );
+
+  const sections = createSectionsConfig(
+    sortedRegularBills,
+    sortedInstallmentBills
+  );
+
+  const handleExitCancel = () => {
+    setLogoutDialogVisible(false);
+  };
+  const handleExitConfirmed = () => {
+    setLogoutDialogVisible(false);
     resetApp();
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "Onboarding" }],
-    });
   };
 
   const openAddModal = (mode: BillMode) => {
@@ -136,11 +163,6 @@ export default function DashboardScreen({ navigation }: any) {
   const handleModalDismiss = () => {
     setModalVisible(false);
     setEditingEntry(undefined);
-  };
-
-  const handleCardPress = (entry: any) => {
-    setSelected(entry);
-    setDetailsVisible(true);
   };
 
   /** Section renderer **/
@@ -238,6 +260,17 @@ export default function DashboardScreen({ navigation }: any) {
             <IconButton
               icon={() => (
                 <Ionicons
+                  name="flask-outline"
+                  size={24}
+                  color={theme.colors.primary}
+                />
+              )}
+              style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
+              onPress={() => navigation.navigate("Test")}
+            />
+            <IconButton
+              icon={() => (
+                <Ionicons
                   name={effectiveMode === "light" ? "sunny" : "moon"}
                   size={24}
                   color={theme.colors.primary}
@@ -268,7 +301,7 @@ export default function DashboardScreen({ navigation }: any) {
                 />
               )}
               style={{ marginHorizontal: tokens.spacing.md * 0.3 }}
-              onPress={handleExit}
+              onPress={() => setLogoutDialogVisible(true)}
             />
           </View>
         </View>
@@ -282,7 +315,11 @@ export default function DashboardScreen({ navigation }: any) {
           <Text
             style={[
               styles.title,
-              { color: theme.colors.onSurface, alignSelf: "center" },
+              {
+                color: theme.colors.onSurface,
+                alignSelf: "center",
+                marginVertical: tokens.spacing.md,
+              },
             ]}
           >
             {greeting}
@@ -304,26 +341,37 @@ export default function DashboardScreen({ navigation }: any) {
               width: "100%",
             }}
           >
-            {sections.map((section) => (
-              <View
-                key={section.mode}
-                style={{
-                  flex: isWideScreen ? 1 : undefined,
-                  width: isWideScreen ? undefined : "100%",
-                }}
-              >
-                <EntrySection
-                  title={section.title}
-                  data={section.data}
-                  emptyTitle={section.emptyTitle}
-                  emptyMessage={section.emptyMessage}
-                  actionLabel={section.actionLabel}
-                  onAddPress={() => openAddModal(section.mode)}
-                  onEdit={openEditModal}
-                  onDelete={deleteEntry}
-                />
-              </View>
-            ))}
+            {sections.map((section) => {
+              return (
+                <View
+                  key={section.mode}
+                  style={{
+                    flex: isWideScreen ? 1 : undefined,
+                    width: isWideScreen ? undefined : "100%",
+                  }}
+                >
+                  <EntrySection
+                    title={section.title}
+                    data={section.data}
+                    emptyTitle={section.emptyTitle}
+                    emptyMessage={section.emptyMessage}
+                    actionLabel={section.actionLabel}
+                    mode={section.mode}
+                    onAddPress={() => openAddModal(section.mode)}
+                    onEdit={openEditModal}
+                    onDelete={deleteEntry}
+                    sortKey={
+                      section.mode === "bill" ? billSortKey : installmentSortKey
+                    }
+                    onChangeSortKey={
+                      section.mode === "bill"
+                        ? setBillSortKey
+                        : setInstallmentSortKey
+                    }
+                  />
+                </View>
+              );
+            })}
           </View>
           <Spacer />
           <DashboardFooter totalBills={bills.length} lastUpdated={undefined} />
@@ -351,6 +399,84 @@ export default function DashboardScreen({ navigation }: any) {
           }
         />
       </View>
+      <Portal>
+        {logoutDialogVisible && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.55)", // darker!
+            }}
+          />
+        )}
+        <Dialog
+          visible={logoutDialogVisible}
+          onDismiss={handleExitCancel}
+          style={{
+            backgroundColor: theme.colors.surface,
+            borderRadius: 16,
+          }}
+        >
+          {/* Header with icon + title */}
+          <Dialog.Title>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Ionicons
+                name="log-out-outline"
+                size={22}
+                color={theme.colors.primary}
+                style={{ marginRight: 8 }}
+              />
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: "700",
+                  color: theme.colors.onSurface,
+                }}
+              >
+                Sign out?
+              </Text>
+            </View>
+          </Dialog.Title>
+
+          <Dialog.Content style={{ paddingTop: 4 }}>
+            {user?.nickname ? (
+              <Text style={{ marginBottom: 8, color: theme.colors.onSurface }}>
+                You're about to sign out from{" "}
+                <Text style={{ fontWeight: "600" }}>{user.nickname}</Text>.
+              </Text>
+            ) : null}
+
+            <Text style={{ color: theme.colors.onSurfaceVariant }}>
+              This will:
+            </Text>
+            <Text
+              style={{ marginTop: 4, color: theme.colors.onSurfaceVariant }}
+            >
+              • Clear your profile (nickname){"\n"}• Reset your bills tracker
+              data on this device{"\n\n"}
+              You'll be taken back to the onboarding screen.
+            </Text>
+          </Dialog.Content>
+
+          <Dialog.Actions>
+            <Button
+              onPress={handleExitCancel}
+              textColor={theme.colors.onSurfaceVariant}
+            >
+              Cancel
+            </Button>
+            <Button
+              onPress={handleExitConfirmed}
+              textColor={theme.colors.error}
+            >
+              Sign out
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaView>
   );
 }

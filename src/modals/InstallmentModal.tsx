@@ -320,9 +320,15 @@ export default function InstallmentModal({ visible, onDismiss, entry }: Props) {
               </Text>
               <IconButton
                 icon="close"
-                size={24}
+                size={26}
                 onPress={onDismiss}
                 iconColor={theme.colors.onSurface}
+                style={{
+                  backgroundColor: theme.dark
+                    ? "rgba(255,255,255,0.1)"
+                    : "rgba(0,0,0,0.05)",
+                  borderRadius: 999,
+                }}
               />
             </View>
 

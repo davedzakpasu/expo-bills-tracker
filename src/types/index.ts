@@ -62,3 +62,40 @@ export interface SectionConfig {
   actionLabel: string;
   mode: BillMode;
 }
+
+type EntrySectionBaseProps = {
+  title: string;
+  data: Entry[];
+  emptyTitle: string;
+  emptyMessage: string;
+  actionLabel: string;
+  onAddPress: () => void;
+  onEdit: (entry: Entry) => void;
+  onDelete: (id: string) => void;
+};
+
+type BillEntrySectionProps = EntrySectionBaseProps & {
+  mode: "bill";
+  sortKey: BillSortKey;
+  onChangeSortKey: (key: BillSortKey) => void;
+};
+
+type InstallmentEntrySectionProps = EntrySectionBaseProps & {
+  mode: "installment";
+  sortKey: InstallmentSortKey;
+  onChangeSortKey: (key: InstallmentSortKey) => void;
+};
+
+export type EntrySectionProps =
+  | BillEntrySectionProps
+  | InstallmentEntrySectionProps;
+
+export type BillSortKey = "nextDue" | "amount" | "name";
+export type InstallmentSortKey = "nextDue" | "remaining" | "name";
+
+export const compareDates = (a?: string, b?: string) => {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+  return new Date(a).getTime() - new Date(b).getTime();
+};

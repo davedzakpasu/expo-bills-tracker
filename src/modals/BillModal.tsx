@@ -123,28 +123,6 @@ export default function BillModal({ visible, onDismiss, entry }: Props) {
     }
   }, [visible, screenHeight, isWeb]);
 
-  const getNextDueDates = (startDate: string, frequency: string) => {
-    const result: Date[] = [];
-    const start = new Date(startDate);
-    const intervalDays =
-      {
-        Weekly: 7,
-        "Bi-Monthly": 15,
-        Monthly: 30,
-        "Every 2 Months": 60,
-        "One-time": 0,
-      }[frequency] ?? 30;
-
-    if (frequency === "One-time") return [start];
-
-    for (let i = 0; i < 3; i++) {
-      const next = new Date(start);
-      next.setDate(start.getDate() + intervalDays * i);
-      result.push(next);
-    }
-    return result;
-  };
-
   const previewAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.spring(previewAnim, {

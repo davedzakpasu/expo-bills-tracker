@@ -3,12 +3,14 @@ import SettingsScreen from "@screens/SettingsScreen";
 import { useAppContext } from "../context/AppContext";
 import DashboardScreen from "../screens/DashboardScreen";
 import OnboardingScreen from "../screens/OnboardingScreen";
+import TestScreen from "../screens/TestScreen";
 
 export type RootStackParamList = {
   Onboarding: undefined;
   Dashboard: undefined;
   AddBillModal: undefined;
   Settings: undefined;
+  Test: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,6 +34,7 @@ export default function AppNavigator() {
         <>
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Test" component={TestScreen} />
         </>
       )}
     </Stack.Navigator>
