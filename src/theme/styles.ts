@@ -23,11 +23,11 @@ export const tokens = {
   },
   typography: {
     title: {
-      fontSize: moderateScale(14),
+      fontSize: moderateScale(18),
       fontWeight: "700" as const,
     },
     subtitle: {
-      fontSize: moderateScale(10),
+      fontSize: moderateScale(12),
       fontWeight: "400" as const,
     },
     amount: {
@@ -70,14 +70,14 @@ export const createAppStyles = (theme: MD3Theme) =>
     // --- Text ---
     title: {
       ...tokens.typography.title,
-      color: theme.colors.onSurface,
-      marginBottom: 4,
+      // color: theme.colors.onSurface,
+      // marginBottom: 4,
     },
     subtitle: {
       ...tokens.typography.subtitle,
-      color: theme.colors.onSurfaceVariant,
-      marginBottom: moderateScale(tokens.spacing.md),
-      opacity: 0.7,
+      // color: theme.colors.onSurfaceVariant,
+      // marginBottom: moderateScale(tokens.spacing.md),
+      // opacity: 0.7,
     },
 
     // --- Amount / Row ---

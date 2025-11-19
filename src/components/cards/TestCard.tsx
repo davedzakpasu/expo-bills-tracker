@@ -1,6 +1,14 @@
+import { FontAwesome6 } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Button, Card, IconButton, Text, useTheme } from "react-native-paper";
+import {
+  Button,
+  Card,
+  Chip,
+  IconButton,
+  Text,
+  useTheme,
+} from "react-native-paper";
 
 type TestCardProps = {
   name: string;
@@ -26,7 +34,10 @@ export const TestCard: React.FC<TestCardProps> = ({
   const theme = useTheme();
 
   return (
-    <Card style={styles.card} mode="elevated">
+    <Card
+      style={[styles.card, { backgroundColor: theme.colors.surface }]}
+      mode="elevated"
+    >
       <Card.Content style={styles.cardContent}>
         {/* Header: title + frequency + actions */}
         <View style={styles.headerRow}>
@@ -53,32 +64,34 @@ export const TestCard: React.FC<TestCardProps> = ({
           </View>
         </View>
 
-        {/* Amount + status pill */}
-        <View style={styles.amountRow}>
-          <Text style={[styles.amount, { color: theme.colors.primary }]}>
-            {amount}
-          </Text>
+        {/* Amount + status + date */}
+        <View style={styles.infoColumn}>
+          <View style={styles.amountRow}>
+            <Text style={[styles.amount, { color: theme.colors.primary }]}>
+              {amount}
+            </Text>
 
-          <View
-            style={[
-              styles.statusPill,
-              { backgroundColor: theme.colors.primary },
-            ]}
-          >
-            <Text style={styles.statusText}>{statusLabel}</Text>
+            <Chip
+              compact
+              style={[
+                styles.statusChip,
+                { backgroundColor: theme.colors.primary },
+              ]}
+              textStyle={styles.statusChipText}
+            >
+              {statusLabel}
+            </Chip>
           </View>
-        </View>
 
-        {/* Date row */}
-        <View style={styles.dateRow}>
-          <IconButton
-            icon="calendar-blank-outline"
-            size={18}
-            disabled
-            style={styles.calendarIcon}
-            iconColor={theme.colors.onSurfaceVariant ?? "#9E9E9E"}
-          />
-          <Text style={styles.dateText}>{dateLabel}</Text>
+          {/* Date below the status */}
+          <View style={styles.dateRow}>
+            <FontAwesome6
+              name="calendar-check"
+              color={theme.colors.onSurfaceVariant ?? "#9E9E9E"}
+              style={styles.dateIcon}
+            />
+            <Text style={styles.dateText}>{dateLabel}</Text>
+          </View>
         </View>
       </Card.Content>
 
@@ -114,6 +127,10 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     paddingVertical: 16,
+  },
+  dateIcon: {
+    marginRight: 4,
+    opacity: 0.8,
   },
   headerRow: {
     flexDirection: "row",
@@ -163,6 +180,7 @@ const styles = StyleSheet.create({
   dateRow: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "flex-end",
   },
   calendarIcon: {
     marginLeft: -8,
@@ -186,5 +204,20 @@ const styles = StyleSheet.create({
   payButtonLabel: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  infoColumn: {
+    flexDirection: "column",
+  },
+
+  statusChip: {
+    borderRadius: 999,
+    paddingHorizontal: 5,
+    opacity: 0.9,
+  },
+
+  statusChipText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 11,
   },
 });

@@ -18,33 +18,39 @@ type TestGridProps = {
 
 export const TestGrid: React.FC<TestGridProps> = ({ data }) => {
   const { width } = useWindowDimensions();
-
-  // Simple responsive breakpoints
   const numColumns = width >= 900 ? 3 : width >= 600 ? 2 : 1;
 
   return (
-    <FlashList
-      data={data}
-      key={numColumns} // force layout recalculation when columns change
-      numColumns={numColumns}
-      contentContainerStyle={styles.listContent}
-      renderItem={({ item }) => (
-        <View style={styles.cardWrapper}>
-          <TestCard
-            name={item.name}
-            frequency={item.frequency}
-            amount={item.amount}
-            statusLabel={item.statusLabel}
-            dateLabel={item.dateLabel}
-          />
-        </View>
-      )}
-      keyExtractor={(item) => item.id}
-    />
+    <View style={styles.wrapper}>
+      <FlashList
+        data={data}
+        key={numColumns}
+        numColumns={numColumns}
+        contentContainerStyle={styles.listContent}
+        style={{ flex: 1 }}
+        renderItem={({ item }) => (
+          <View style={styles.cardWrapper}>
+            <TestCard
+              name={item.name}
+              frequency={item.frequency}
+              amount={item.amount}
+              statusLabel={item.statusLabel}
+              dateLabel={item.dateLabel}
+            />
+          </View>
+        )}
+        keyExtractor={(item) => item.id}
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    minHeight: 2, // make sure FlashList has a usable size
+    alignSelf: "stretch",
+  },
   listContent: {
     padding: 16,
   },

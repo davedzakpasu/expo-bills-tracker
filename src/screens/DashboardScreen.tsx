@@ -350,25 +350,35 @@ export default function DashboardScreen({ navigation }: any) {
                     width: isWideScreen ? undefined : "100%",
                   }}
                 >
-                  <EntrySection
-                    title={section.title}
-                    data={section.data}
-                    emptyTitle={section.emptyTitle}
-                    emptyMessage={section.emptyMessage}
-                    actionLabel={section.actionLabel}
-                    mode={section.mode}
-                    onAddPress={() => openAddModal(section.mode)}
-                    onEdit={openEditModal}
-                    onDelete={deleteEntry}
-                    sortKey={
-                      section.mode === "bill" ? billSortKey : installmentSortKey
-                    }
-                    onChangeSortKey={
-                      section.mode === "bill"
-                        ? setBillSortKey
-                        : setInstallmentSortKey
-                    }
-                  />
+                  {section.mode === "bill" ? (
+                    <EntrySection
+                      title={section.title}
+                      data={section.data}
+                      emptyTitle={section.emptyTitle}
+                      emptyMessage={section.emptyMessage}
+                      actionLabel={section.actionLabel}
+                      mode="bill"
+                      onAddPress={() => openAddModal("bill")}
+                      onEdit={openEditModal}
+                      onDelete={deleteEntry}
+                      sortKey={billSortKey}
+                      onChangeSortKey={setBillSortKey}
+                    />
+                  ) : (
+                    <EntrySection
+                      title={section.title}
+                      data={section.data}
+                      emptyTitle={section.emptyTitle}
+                      emptyMessage={section.emptyMessage}
+                      actionLabel={section.actionLabel}
+                      mode="installment"
+                      onAddPress={() => openAddModal("installment")}
+                      onEdit={openEditModal}
+                      onDelete={deleteEntry}
+                      sortKey={installmentSortKey}
+                      onChangeSortKey={setInstallmentSortKey}
+                    />
+                  )}
                 </View>
               );
             })}

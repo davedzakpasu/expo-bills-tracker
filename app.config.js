@@ -27,11 +27,6 @@ export default {
         backgroundColor: "#2196F3",
       },
     },
-    // splash: {
-    //   image: "./assets/splash.png",
-    //   resizeMode: "contain",
-    //   backgroundColor: "#2196F3",
-    // },
     plugins: [
       [
         "expo-splash-screen",

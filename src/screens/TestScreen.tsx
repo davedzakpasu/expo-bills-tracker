@@ -1,6 +1,7 @@
+import { TestGrid } from "@components/cards/TestGrid";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useTheme } from "react-native-paper";
+import { Avatar, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { tokens } from "src/theme/styles";
 
@@ -58,6 +59,8 @@ export default function TestScreen({ navigation }: any) {
     }
   };
 
+  const LeftContent = <Avatar.Icon icon="folder" />;
+
   return (
     <SafeAreaView
       style={{
@@ -95,20 +98,7 @@ export default function TestScreen({ navigation }: any) {
         </Text>
       </View>
       <View style={styles.container}>
-        <Text style={[styles.title, { color: theme.colors.primary }]}>
-          Test Screen
-        </Text>
-        {/* <TestCard
-          name="Test"
-          frequency="Bi-Weekly"
-          amount="$35.00"
-          statusLabel="Upcoming (In 5 days)"
-          dateLabel="18/11/2025"
-          onEdit={() => {}}
-          onDelete={() => {}}
-          onMarkAsPaid={() => {}}
-        /> */}
-        {/* <TestGrid data={data} /> */}
+        <TestGrid data={data} />
       </View>
     </SafeAreaView>
   );
@@ -117,11 +107,10 @@ export default function TestScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // justifyContent: "center",
-    // alignItems: "center",
+    alignItems: "stretch",
   },
   title: {
     fontSize: 24,
-    // fontWeight: "bold",
+    fontWeight: "bold",
   },
 });

@@ -7,25 +7,31 @@ export const getDueStatusInfo = (nextDueDate?: string) => {
     return { label: "No Due Date", color: "#9E9E9E", diffDays: null };
 
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   const dueDate = new Date(nextDueDate);
+  dueDate.setHours(0, 0, 0, 0);
+
   const diffDays = Math.ceil(
     (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
   );
 
-  let status = "On Time";
-  let color = "#00B16A";
+  let status: string;
+  let color: string;
 
   if (diffDays < 0) {
     status = "Overdue";
     color = "#E53935";
+  } else if (diffDays === 0) {
+    status = "Due Today";
+    color = "#E53935";
   } else if (diffDays <= 3) {
     status = "Due Soon";
     color = "#FF9800";
-  } else if (diffDays > 3) {
+  } else {
     status = "Upcoming";
-    color = "#1E88E5";
+    color = "#00B16A";
   }
-
   return { label: status, color, diffDays };
 };
 
@@ -33,10 +39,9 @@ export const getDueStatusInfo = (nextDueDate?: string) => {
  * Optional: make it more human-friendly for tooltips or labels
  */
 export const getRelativeStatusLabel = (diffDays: number | null): string => {
-  if (diffDays === null) return "";
-  if (diffDays === 0) return "Due today";
-  if (diffDays === 1) return "Due tomorrow";
-  if (diffDays > 1) return `In ${diffDays} days`;
-  if (diffDays === -1) return "1 day late";
-  return `${Math.abs(diffDays)} days late`;
+  if (diffDays === null || diffDays === 0) return "";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays > 1) return `in ${diffDays} days`;
+  const daysLate = Math.abs(diffDays);
+  return daysLate === 1 ? "1 day late" : `${daysLate} days late`;
 };

@@ -1,6 +1,7 @@
 import { EmptyState } from "@components/EmptyState";
+import { FlashList } from "@shopify/flash-list";
 import { memo, useCallback, useState } from "react";
-import { FlatList, LayoutChangeEvent, View } from "react-native";
+import { LayoutChangeEvent, StyleSheet, View } from "react-native";
 import { Button, Text, useTheme } from "react-native-paper";
 import { moderateScale } from "react-native-size-matters";
 import { useAppContext } from "../context/AppContext";
@@ -8,6 +9,7 @@ import { createAppStyles, tokens } from "../theme/styles";
 import { EntrySectionProps } from "../types";
 import BillCard from "./cards/BillCard";
 import InstallmentCard from "./cards/InstallmentCard";
+import SortControls from "./SortControls";
 
 const getNumColumns = (width: number) => {
   if (width === 0) return 1;
@@ -48,161 +50,6 @@ const EntrySection = memo(
       setContainerWidth(width);
     }, []);
 
-    const renderSortControls = () => {
-      if (!data.length) return null;
-
-      const baseButtonStyle = {
-        marginHorizontal: 3,
-        minWidth: undefined,
-      } as const;
-
-      const baseLabelStyle = {
-        fontSize: 13,
-        textTransform: "none" as const,
-      };
-
-      const activeChipStyle = {
-        ...baseButtonStyle,
-        borderRadius: 999,
-        paddingHorizontal: 10,
-        paddingVertical: 2,
-        backgroundColor: theme.colors.primaryContainer,
-      };
-
-      const activeLabelStyle = {
-        ...baseLabelStyle,
-        color: theme.colors.onPrimaryContainer,
-        fontWeight: "600" as const,
-      };
-
-      const inactiveLabelStyle = {
-        ...baseLabelStyle,
-        color: theme.colors.primary,
-      };
-
-      if (mode === "bill") {
-        return (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginTop: tokens.spacing.xs,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                marginRight: 6,
-                color: theme.colors.onSurface,
-              }}
-            >
-              Sort:
-            </Text>
-
-            <Button
-              compact
-              mode={sortKey === "nextDue" ? "contained" : "text"}
-              onPress={() => onChangeSortKey("nextDue")}
-              style={sortKey === "nextDue" ? activeChipStyle : baseButtonStyle}
-              labelStyle={
-                sortKey === "nextDue" ? activeLabelStyle : inactiveLabelStyle
-              }
-              contentStyle={{ paddingHorizontal: 0 }}
-            >
-              Next due
-            </Button>
-
-            <Button
-              compact
-              mode={sortKey === "amount" ? "contained" : "text"}
-              onPress={() => onChangeSortKey("amount")}
-              style={sortKey === "amount" ? activeChipStyle : baseButtonStyle}
-              labelStyle={
-                sortKey === "amount" ? activeLabelStyle : inactiveLabelStyle
-              }
-              contentStyle={{ paddingHorizontal: 0 }}
-            >
-              Amount
-            </Button>
-
-            <Button
-              compact
-              mode={sortKey === "name" ? "contained" : "text"}
-              onPress={() => onChangeSortKey("name")}
-              style={sortKey === "name" ? activeChipStyle : baseButtonStyle}
-              labelStyle={
-                sortKey === "name" ? activeLabelStyle : inactiveLabelStyle
-              }
-              contentStyle={{ paddingHorizontal: 0 }}
-            >
-              Name
-            </Button>
-          </View>
-        );
-      }
-
-      // mode === "installment"
-      return (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginTop: tokens.spacing.xs,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 13,
-              marginRight: 6,
-              color: theme.colors.onSurface,
-            }}
-          >
-            Sort:
-          </Text>
-
-          <Button
-            compact
-            mode={sortKey === "nextDue" ? "contained" : "text"}
-            onPress={() => onChangeSortKey("nextDue")}
-            style={sortKey === "nextDue" ? activeChipStyle : baseButtonStyle}
-            labelStyle={
-              sortKey === "nextDue" ? activeLabelStyle : inactiveLabelStyle
-            }
-            contentStyle={{ paddingHorizontal: 0 }}
-          >
-            Next due
-          </Button>
-
-          <Button
-            compact
-            mode={sortKey === "remaining" ? "contained" : "text"}
-            onPress={() => onChangeSortKey("remaining")}
-            style={sortKey === "remaining" ? activeChipStyle : baseButtonStyle}
-            labelStyle={
-              sortKey === "remaining" ? activeLabelStyle : inactiveLabelStyle
-            }
-            contentStyle={{ paddingHorizontal: 0 }}
-          >
-            Remaining
-          </Button>
-
-          <Button
-            compact
-            mode={sortKey === "name" ? "contained" : "text"}
-            onPress={() => onChangeSortKey("name")}
-            style={sortKey === "name" ? activeChipStyle : baseButtonStyle}
-            labelStyle={
-              sortKey === "name" ? activeLabelStyle : inactiveLabelStyle
-            }
-            contentStyle={{ paddingHorizontal: 0 }}
-          >
-            Name
-          </Button>
-        </View>
-      );
-    };
-
     return (
       <View
         style={[
@@ -227,7 +74,7 @@ const EntrySection = memo(
             style={[
               styles.title,
               {
-                fontWeight: "700",
+                fontWeight: "600",
                 fontSize: moderateScale(22),
                 color: theme.colors.onSurface,
               },
@@ -258,7 +105,12 @@ const EntrySection = memo(
         </View>
 
         {/* Second row: sort controls */}
-        {renderSortControls()}
+        <SortControls
+          mode={mode}
+          sortKey={sortKey}
+          onChangeSortKey={onChangeSortKey as (key: any) => void}
+          hasData={data.length > 0}
+        />
 
         {/* Content */}
         {data.length === 0 ? (
@@ -271,10 +123,10 @@ const EntrySection = memo(
             />
           </View>
         ) : (
-          <>
-            <FlatList
-              key={numColumns}
+          <View style={localStyles.wrapper}>
+            <FlashList
               data={itemsToRender}
+              key={numColumns}
               keyExtractor={(item) => item.id}
               numColumns={numColumns}
               renderItem={({ item }) => (
@@ -301,12 +153,11 @@ const EntrySection = memo(
                 </View>
               )}
               contentContainerStyle={{
-                paddingTop: tokens.spacing.md,
+                paddingVertical: tokens.spacing.sm,
               }}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}
             />
-
             {hasMore && (
               <Button
                 onPress={() => setExpanded(!expanded)}
@@ -317,12 +168,27 @@ const EntrySection = memo(
                 {expanded ? "Show less" : "See all"}
               </Button>
             )}
-          </>
+          </View>
         )}
       </View>
     );
   }
 );
+
+const localStyles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    minHeight: 2, // make sure FlashList has a usable size
+    alignSelf: "stretch",
+  },
+  listContent: {
+    padding: 16,
+  },
+  cardWrapper: {
+    flex: 1,
+    padding: 8,
+  },
+});
 
 EntrySection.displayName = "EntrySection";
 export default EntrySection;
