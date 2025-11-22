@@ -1,8 +1,8 @@
 export default {
   expo: {
-    name: "expo-bills-tracker",
+    name: "Bills Tracker",
     slug: "expo-bills-tracker",
-    platforms: ["ios", "android"],
+    platforms: ["ios", "android", "web"],
     web: {
       bundler: "metro",
       output: "single",

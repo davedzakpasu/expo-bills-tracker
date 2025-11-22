@@ -2,11 +2,17 @@ import { EmptyState } from "@components/EmptyState";
 import { FlashList } from "@shopify/flash-list";
 import { memo, useCallback, useState } from "react";
 import { LayoutChangeEvent, StyleSheet, View } from "react-native";
-import { Button, Text, useTheme } from "react-native-paper";
+import {
+  Button,
+  Divider,
+  IconButton,
+  Text,
+  useTheme,
+} from "react-native-paper";
 import { moderateScale } from "react-native-size-matters";
 import { useAppContext } from "../context/AppContext";
 import { createAppStyles, tokens } from "../theme/styles";
-import { EntrySectionProps } from "../types";
+import { Entry, EntrySectionProps } from "../types";
 import BillCard from "./cards/BillCard";
 import InstallmentCard from "./cards/InstallmentCard";
 import SortControls from "./SortControls";
@@ -68,15 +74,20 @@ const EntrySection = memo(
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
+            paddingBottom: tokens.spacing.xs,
+            // gap not supported everywhere; use margins where needed
           }}
         >
           <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
             style={[
               styles.title,
               {
-                fontWeight: "600",
+                fontWeight: "700",
                 fontSize: moderateScale(22),
                 color: theme.colors.onSurface,
+                marginRight: tokens.spacing.xs,
               },
             ]}
           >
@@ -84,33 +95,29 @@ const EntrySection = memo(
           </Text>
 
           {data.length > 0 && (
-            <Button
-              mode="contained"
+            <IconButton
               onPress={onAddPress}
               icon="plus"
-              style={{
-                borderRadius: 999,
-                paddingHorizontal: tokens.spacing.md * 1.2,
-                height: 38,
-              }}
-              labelStyle={{
-                textTransform: "none",
-                fontWeight: "600",
-              }}
-            >
-              {/* {actionLabel} */}
-              Add
-            </Button>
+              iconColor={theme.colors.onPrimary}
+              containerColor={theme.colors.primary}
+              size={20}
+              style={{ marginLeft: tokens.spacing.xs }}
+            />
           )}
         </View>
 
-        {/* Second row: sort controls */}
-        <SortControls
-          mode={mode}
-          sortKey={sortKey}
-          onChangeSortKey={onChangeSortKey as (key: any) => void}
-          hasData={data.length > 0}
-        />
+        {/* Divider between header and body */}
+        <Divider bold style={{ marginVertical: tokens.spacing.sm }} />
+
+        {/* Sort controls inside header, under title/divider */}
+        <View style={{ marginBottom: tokens.spacing.md }}>
+          <SortControls
+            mode={mode}
+            sortKey={sortKey as any}
+            onChangeSortKey={onChangeSortKey as (key: any) => void}
+            hasData={data.length > 0}
+          />
+        </View>
 
         {/* Content */}
         {data.length === 0 ? (
@@ -124,12 +131,12 @@ const EntrySection = memo(
           </View>
         ) : (
           <View style={localStyles.wrapper}>
-            <FlashList
+            <FlashList<Entry>
               data={itemsToRender}
               key={numColumns}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item: { id: string }) => item.id}
               numColumns={numColumns}
-              renderItem={({ item }) => (
+              renderItem={({ item }: { item: Entry }) => (
                 <View
                   style={{
                     marginRight: cardSpacing,
@@ -178,7 +185,7 @@ const EntrySection = memo(
 const localStyles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    minHeight: 2, // make sure FlashList has a usable size
+    minHeight: 2,
     alignSelf: "stretch",
   },
   listContent: {

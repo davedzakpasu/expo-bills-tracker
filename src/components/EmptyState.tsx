@@ -5,15 +5,10 @@ import { Button, Text, useTheme } from "react-native-paper";
 import { createAppStyles, tokens } from "../theme/styles";
 
 type EmptyStateProps = {
-  /** Optional icon (FontAwesome6 name) */
   icon?: string;
-  /** Large title (e.g. “No Bills Yet”) */
   title?: string;
-  /** Supporting message */
   message?: string;
-  /** Button label (e.g. “Add Bill”) */
   actionLabel?: string;
-  /** Button handler */
   onActionPress?: () => void;
 };
 
@@ -43,10 +38,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         style={{ marginBottom: tokens.spacing.md }}
       />
       <Text
-        variant="headlineMedium"
         style={[
           styles.title,
-          { textAlign: "center", marginBottom: tokens.spacing.md },
+          {
+            textAlign: "center",
+            marginBottom: tokens.spacing.md,
+            opacity: 0.75,
+          },
         ]}
       >
         {title}
@@ -69,7 +67,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           mode="contained"
           onPress={onActionPress}
           icon="plus"
-          style={{ borderRadius: tokens.radius.md }}
+          style={{ borderRadius: 999, marginVertical: 10 }}
         >
           {actionLabel}
         </Button>
